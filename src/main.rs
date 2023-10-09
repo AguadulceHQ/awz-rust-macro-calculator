@@ -10,8 +10,8 @@ struct Person {
 }
 
 struct CaloricIntake {
-    min: u8,
-    max: u8,
+    min: u16,
+    max: u16,
 }
 
 enum Gender {
@@ -25,6 +25,12 @@ enum Activity {
     ModeratelyActive,
     VeryActive,
     SuperActive,
+}
+
+enum Goal {
+    WeightLoss,
+    Maintenance,
+    GainWeight,
 }
 
 impl fmt::Display for Person {
@@ -62,6 +68,24 @@ impl fmt::Display for Activity {
     }
 }
 
+impl fmt::Display for Goal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let goal = match *self {
+            Goal::WeightLoss => "losing weight",
+            Goal::Maintenance => "maintaining weight",
+            Goal::GainWeight => "gaining weight (lean mass)",
+        };
+
+        write!(f, "{}", goal)
+    }
+}
+
+impl fmt::Display for CaloricIntake {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}-{} kcal", self.min, self.max)
+    }
+}
+
 fn main() {
     let luca = Person {
         name: String::from("Luca"),
@@ -74,7 +98,17 @@ fn main() {
 
     println!("{}", luca);
 
-    println!("Luca's caloric treshold is {}", caloric_treshold(luca));
+    let caloric_treshold = caloric_treshold(luca);
+
+    println!("Luca's caloric treshold is {}", caloric_treshold);
+
+    let goal = Goal::WeightLoss;
+
+    println!(
+        "Luca's caloric intake should be {} for {}",
+        caloric_intake(caloric_treshold, &goal),
+        goal
+    );
 }
 
 fn caloric_treshold(person: Person) -> f32 {
@@ -120,4 +154,26 @@ fn caloric_treshold(person: Person) -> f32 {
     }
 
     basal_metabolic_rate * activity_multiplier
+}
+
+fn caloric_intake(caloric_treshold: f32, goal: &Goal) -> CaloricIntake {
+    let caloric_treshold = caloric_treshold as u16;
+    let mut caloric_intake = CaloricIntake { min: 0, max: 0 };
+
+    match *goal {
+        Goal::WeightLoss => {
+            caloric_intake.min = caloric_treshold - 1000;
+            caloric_intake.max = caloric_treshold - 500;
+        }
+        Goal::Maintenance => {
+            caloric_intake.min = caloric_treshold;
+            caloric_intake.max = caloric_treshold;
+        }
+        Goal::GainWeight => {
+            caloric_intake.min = caloric_treshold + 250;
+            caloric_intake.max = caloric_treshold + 500;
+        }
+    }
+
+    caloric_intake
 }
