@@ -10,8 +10,14 @@ struct Person {
 }
 
 struct CaloricIntake {
-    min: u16,
-    max: u16,
+    min: f32,
+    max: f32,
+}
+
+struct MacroSplit {
+    carbs: f32,
+    protein: f32,
+    fat: f32,
 }
 
 enum Gender {
@@ -31,6 +37,13 @@ enum Goal {
     WeightLoss,
     Maintenance,
     GainWeight,
+}
+
+enum Diet {
+    Balanced,
+    LowCarb,
+    HighCarb,
+    Ketogenic,
 }
 
 impl fmt::Display for Person {
@@ -86,6 +99,42 @@ impl fmt::Display for CaloricIntake {
     }
 }
 
+impl fmt::Display for Diet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let diet = match *self {
+            Diet::Balanced => "balanced",
+            Diet::LowCarb => "low carb",
+            Diet::HighCarb => "high carb",
+            Diet::Ketogenic => "ketogenic",
+        };
+
+        write!(f, "{}", diet)
+    }
+}
+
+impl fmt::Display for MacroSplit {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "carbs: {}, protein: {}, fat: {}",
+            self.carbs, self.protein, self.fat
+        )
+    }
+}
+
+impl MacroSplit {
+    fn to_grams(&self) -> (f32, f32, f32) {
+        const CALORIES_PER_CARB: f32 = 4.0;
+        const CALORIES_PER_PROTEIN: f32 = 4.0;
+        const CALORIES_PER_FAT: f32 = 9.0;
+
+        (
+            self.carbs / CALORIES_PER_CARB,
+            self.protein / CALORIES_PER_PROTEIN,
+            self.fat / CALORIES_PER_FAT,
+        )
+    }
+}
 fn main() {
     let luca = Person {
         name: String::from("Luca"),
@@ -109,6 +158,12 @@ fn main() {
         caloric_intake(caloric_treshold, &goal),
         goal
     );
+
+    let diet = Diet::LowCarb;
+    let (carbs, protein, fat) =
+        macro_split(caloric_intake(caloric_treshold, &goal), &diet).to_grams();
+
+    println!("Considering a {} diet, the macros should be distributed as follows: carbs {}g, protein {}g, fat {}g", &diet, carbs, protein, fat);
 }
 
 fn caloric_treshold(person: Person) -> f32 {
@@ -157,23 +212,55 @@ fn caloric_treshold(person: Person) -> f32 {
 }
 
 fn caloric_intake(caloric_treshold: f32, goal: &Goal) -> CaloricIntake {
-    let caloric_treshold = caloric_treshold as u16;
-    let mut caloric_intake = CaloricIntake { min: 0, max: 0 };
+    let mut caloric_intake = CaloricIntake { min: 0.0, max: 0.0 };
 
     match *goal {
         Goal::WeightLoss => {
-            caloric_intake.min = caloric_treshold - 1000;
-            caloric_intake.max = caloric_treshold - 500;
+            caloric_intake.min = caloric_treshold - 1000.0;
+            caloric_intake.max = caloric_treshold - 500.0;
         }
         Goal::Maintenance => {
             caloric_intake.min = caloric_treshold;
             caloric_intake.max = caloric_treshold;
         }
         Goal::GainWeight => {
-            caloric_intake.min = caloric_treshold + 250;
-            caloric_intake.max = caloric_treshold + 500;
+            caloric_intake.min = caloric_treshold + 250.0;
+            caloric_intake.max = caloric_treshold + 500.0;
         }
     }
 
     caloric_intake
+}
+
+fn macro_split(caloric_intake: CaloricIntake, diet: &Diet) -> MacroSplit {
+    match diet {
+        Diet::Balanced => {
+            return MacroSplit {
+                carbs: caloric_intake.min * 0.4,
+                protein: caloric_intake.min * 0.3,
+                fat: caloric_intake.min * 0.3,
+            }
+        }
+        Diet::LowCarb => {
+            return MacroSplit {
+                carbs: caloric_intake.min * 0.3,
+                protein: caloric_intake.min * 0.4,
+                fat: caloric_intake.min * 0.3,
+            }
+        }
+        Diet::HighCarb => {
+            return MacroSplit {
+                carbs: caloric_intake.min * 0.5,
+                protein: caloric_intake.min * 0.2,
+                fat: caloric_intake.min * 0.3,
+            }
+        }
+        Diet::Ketogenic => {
+            return MacroSplit {
+                carbs: caloric_intake.min * 0.1,
+                protein: caloric_intake.min * 0.3,
+                fat: caloric_intake.min * 0.6,
+            }
+        }
+    }
 }
