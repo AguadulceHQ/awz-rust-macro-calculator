@@ -264,3 +264,45 @@ fn macro_split(caloric_intake: CaloricIntake, diet: &Diet) -> MacroSplit {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn calculate_caloric_treshold_based_on_base_data() {
+        let person = Person {
+            name: String::from("Luca"),
+            age: 33,
+            gender: Gender::Male,
+            height: 173,
+            weight: 70,
+            activty: Activity::SuperActive,
+        };
+
+        assert_eq!(caloric_treshold(person), 2879.0908);
+    }
+
+    #[test]
+    fn calculate_caloric_intake_for_weight_loss() {
+        let caloric_treshold = 2879.0908;
+        let goal = Goal::WeightLoss;
+
+        assert_eq!(caloric_intake(caloric_treshold, &goal).min, 1879.0908);
+        assert_eq!(caloric_intake(caloric_treshold, &goal).max, 2379.0908);
+    }
+
+    #[test]
+    fn calculate_macro_split_for_low_carb_diet() {
+        let goal = Goal::WeightLoss;
+        let diet = Diet::LowCarb;
+        let caloric_treshold = 2879.0908;
+
+        assert_eq!(caloric_intake(caloric_treshold, &goal).min, 1879.0908);
+
+        assert_eq!(
+            (140.93182, 187.90909, 62.636368),
+            macro_split(caloric_intake(caloric_treshold, &goal), &diet).to_grams()
+        )
+    }
+}
